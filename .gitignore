@@ -1,0 +1,6 @@
+csvs/
+2025/
+njas_judging.log
+.env
+__pycache__/
+output/
