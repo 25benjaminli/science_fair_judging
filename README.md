@@ -25,18 +25,18 @@ All input files should be placed in the `2025` directory.
 
 Maps student projects to categories and assigned judges.
 
-| ID (project) | Category | Student First Name | Student Last Name | Judge 1 | Judge 2 | Judge 3 | ... |
+| Category | ID (project) | Student First Name | Student Last Name | Judge 1 | Judge 2 | Judge 3 | ... |
 |--------------|----------|-------------------|------------------|---------|---------|---------|-------|
-| APS01 | Animal and Plant Science | John | Doe | Alice Smith | Bob Jones | Carol White | ...
-| MCS01 | Math and Computer Science | Jane | Smith | Zachery Smith | Neville Ford | Pam Rogers | ...
-|  | Math and Computer Science | Jacob | Green | Zachery Smith | Neville Ford | Pam Rogers | ...
+| Animal and Plant Science | APS01 | John | Doe | Alice Smith | Bob Jones | Carol White | ...
+| Math and Computer Science | MCS01 | Jane | Smith | Zachery Smith | Neville Ford | Pam Rogers | ...
+|  | MCS02 | Jacob | Green | Zachery Smith | Neville Ford | Pam Rogers | ...
 | CHE01 | Chemistry/Biochemistry | Mike | Johnson | David Lee | Emily Brown | Frank Davis | ...
 
 **Key Points:**
 - The `Category` column forward-fills: blank cells inherit the category from above. BUT I believe it also works if each cell has a category assigned to it too. 
 - Judge columns (1-6) can be left blank if fewer judges are assigned
 - Project IDs must be unique and match IDs in scoring data
-- Judge names must match format in `ids_judges.csv` (format: "First Last")
+- Judge names should match format in `ids_judges.csv` (format: "First Last") to match them to their IDs. **Note: If you want to reduce the chance for error, use judge IDs directly in place of names. Only reason this exists is I didn't have that luxury with the data I was given. You'll have to modify the code though**
 
 ### `ids_judges.csv`
 
@@ -45,7 +45,7 @@ List of all judges with unique identifiers.
 | JUDGE ID | FIRST | LAST |
 |----------|-------|------|
 | ASM | Alice | Smith |
-| BJO | Bob | Jones |
+| BJO | Bob | Jones |   
 | CWH | Carol | White |
 | DLE | David | Lee |
 | EBR | Emily | Brown |
@@ -56,7 +56,7 @@ List of all judges with unique identifiers.
 
 ### `raw_scores.csv`
 
-This is acquired via the spreadsheet connected to the google form. I set up a simple google form with the "multiple choice grid" option titled "presentation content". The resulting spreadsheet should look like this. 
+This is acquired via the spreadsheet connected to the google form. I set up a simple google form with the "multiple choice grid" option titled "presentation content" (although this could be named whatever you want, just adjust the filtering code). The resulting spreadsheet should look like this. 
 
 | Timestamp | Email Address | Judge ID | Student Project ID | Presentation Content [Background] | Presentation Content [Originality] | Presentation Content [Methodology] | ... | Other Comments | Student Name |
 |-----------|---------------|----------|-------------------|----------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------|-----|----------------|--------------|
@@ -69,7 +69,6 @@ This is acquired via the spreadsheet connected to the google form. I set up a si
 - `Timestamp` and `Email Address` are ignored by the system
 - `Student Project ID` are enforced to match IDs in `ids_categories.csv`
 - `Judge ID` are enforced to match IDs in `ids_judges.csv`
-- All columns with "Presentation Content" or "Presentation Skills" in the header are used for scoring
 
 
 
