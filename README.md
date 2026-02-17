@@ -1,12 +1,10 @@
 # Science Fair Judging System
 
-Takes judging scores from google forms -> spreadsheets, performs input validation to ensure consistency, orders participants per category by mean score. Should be adaptable to custom forms with some tweaks and fairly extendable (in case more summary statistics on judges students are desired). 
-
-This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Academy Symposium with a user interface for easier monitoring. 
+This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Symposium with a more generalized user interface for easier monitoring. The main ideas are to track judging scores for student projects, generate summary statistics, and verify input validity. At some point it may be a good idea to create a unified interface to handle judge signup, project registration, and score processing but for now the program requires some manual setup. Feel free to [email me](mailto:25benjaminli@gmail.com) with any questions about usage. 
 
 ## Installation
 
-1. Install [uv](https://github.com/astral-sh/uv) if you haven't already:
+1. Install [uv](https://github.com/astral-sh/uv) if you haven't already.
 
 2. Install project dependencies:
 ```sh
@@ -23,7 +21,7 @@ uv sync
 
 ## Data Format
 
-All input files should be placed in the `2025` directory. Fair organizers should stick to the following formats for the program to work correctly. The program performs various checks to ensure data integrity but the data must be in the correct format. 
+All input files should be placed in the `2025` directory. Fair organizers should stick to the following formats for the program to work correctly. The program performs various checks to ensure data integrity but the **data must be in the correct format.** I recommend doing some dry runs with dummy data to verify the program is working and understand how to operate it.
 
 ### `ids_categories.csv`
 

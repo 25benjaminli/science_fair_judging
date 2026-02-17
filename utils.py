@@ -46,8 +46,6 @@ def generate_csv(data_dir, out_dir):
         how='left'
     )
 
-    print("initial merged columns", merged.columns)
-
     merged = merged.drop(columns=['ID (project)'])
     merged['Student Project ID'] = merged['Student Project ID'].astype(
         str).str.strip().str.upper()
@@ -73,8 +71,6 @@ def generate_csv(data_dir, out_dir):
     results['Judges Num'] = results['Judges Had'].apply(
         lambda x: len(x.split(',')) if pd.notna(x) else 0)
 
-    print("results number of rows", len(results))
-
     # Average Total Score is just the average of all the scoring columns, reason why the other columns are there is in case you need more analysis
     results['Average Total Score'] = sum(
         results[col] for col in SCORING_COLUMNS)
@@ -86,7 +82,7 @@ def generate_csv(data_dir, out_dir):
         'Category', 'Student Project ID', 'Student Name', 'Title of Presentation',
         'Average Total Score', 'Judges Num', 'Judges Had'
     ]
-    print("results columns after processing", results.columns)
+    # print("results columns after processing", results.columns)
     final_df = results[final_cols].copy()
 
     # Sort by category and score
@@ -166,7 +162,6 @@ def verify_validity(final_scores, data_dir, out_dir):
     ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
     id_list = [str(x).strip().upper()
                for x in ids_categories['ID (project)'].tolist()]
-    # student_names_list = [str(x).strip().lower() for x in ids_categories['Student Name'].tolist()]
 
     project_dict = get_necessary_judges(
         ids_categories, ids_judges, final_scores)
@@ -234,7 +229,7 @@ def get_names(data_dir):
 
 
 if __name__ == "__main__":
-    # sanity check
+    # sanity check, you can also run the processing logic from here without the UI
     data_dir = "2025"
     out_dir = "output"
     final_scores = generate_csv(data_dir, out_dir)
