@@ -1,15 +1,19 @@
 # Science Fair Judging System
 
-Takes judging scores from google forms -> spreadsheets, performs input validation to ensure consistency, orders participants per category by mean score. Should be adaptable to your own custom forms with some tweaks and fairly extendable (in case you want more summary statistics on judges, students, etc). Used for the 2025 New Jersey Academy of Science Junior Academy Symposium. 
+Takes judging scores from google forms -> spreadsheets, performs input validation to ensure consistency, orders participants per category by mean score. Should be adaptable to custom forms with some tweaks and fairly extendable (in case more summary statistics on judges students are desired). 
+
+This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Academy Symposium with a user interface for easier monitoring. 
 
 ## Installation
 
-1. Install required packages (it would be wise to use something like conda...):
+1. Install [uv](https://github.com/astral-sh/uv) if you haven't already:
+
+2. Install project dependencies:
 ```sh
-pip install -r requirements.txt
+uv sync
 ```
 
-2. Set up Google Sheets API:
+3. Set up Google Sheets API:
    - Create a service account and download the credentials JSON file
    - Share your Google Spreadsheet with the service account email
    - Create a `.env` file in the project root:
@@ -19,7 +23,7 @@ pip install -r requirements.txt
 
 ## Data Format
 
-All input files should be placed in the `2025` directory.
+All input files should be placed in the `2025` directory. Fair organizers should stick to the following formats for the program to work correctly. The program performs various checks to ensure data integrity but the data must be in the correct format. 
 
 ### `ids_categories.csv`
 
@@ -30,17 +34,17 @@ Maps student projects to categories and assigned judges.
 | Animal and Plant Science | APS01 | John | Doe | Alice Smith | Bob Jones | Carol White | ...
 | Math and Computer Science | MCS01 | Jane | Smith | Zachery Smith | Neville Ford | Pam Rogers | ...
 |  | MCS02 | Jacob | Green | Zachery Smith | Neville Ford | Pam Rogers | ...
-| CHE01 | Chemistry/Biochemistry | Mike | Johnson | David Lee | Emily Brown | Frank Davis | ...
+| Chemistry/Biochemistry | CHE01 | Mike | Johnson | David Lee | Emily Brown | Frank Davis | ...
 
 **Key Points:**
-- The `Category` column forward-fills: blank cells inherit the category from above. BUT I believe it also works if each cell has a category assigned to it too. 
-- Judge columns (1-6) can be left blank if fewer judges are assigned
+- The `Category` column can forward-fill: blank cells inherit the category from above (e.g. MCS02 is also in Math and Computer Science)
+- Judge columns (1-6) can be left blank if fewer judges are assigned or modified to fit the fair's needs
 - Project IDs must be unique and match IDs in scoring data
-- Judge names should match format in `ids_judges.csv` (format: "First Last") to match them to their IDs. **Note: If you want to reduce the chance for error, use judge IDs directly in place of names. Only reason this exists is I didn't have that luxury with the data I was given. You'll have to modify the code though**
+- Judge names should match format in `ids_judges.csv` (format: "First Last") to match them to their IDs. 
 
 ### `ids_judges.csv`
 
-List of all judges with unique identifiers.
+List of all judges with unique identifiers. These IDs must be consistent throughout the process. 
 
 | JUDGE ID | FIRST | LAST |
 |----------|-------|------|
@@ -49,10 +53,6 @@ List of all judges with unique identifiers.
 | CWH | Carol | White |
 | DLE | David | Lee |
 | EBR | Emily | Brown |
-
-**Key Points:**
-- Judge IDs must be consistent across all files
-- Names must exactly match those used in `ids_categories.csv`
 
 ### `raw_scores.csv`
 
@@ -66,41 +66,36 @@ This is acquired via the spreadsheet connected to the google form. I set up a si
 
 **Key Points:**
 - The "..." represents additional scoring columns from the judging rubric
-- `Timestamp` and `Email Address` are ignored by the system
+- `Timestamp` and `Email Address` are ignored
 - `Student Project ID` are enforced to match IDs in `ids_categories.csv`
-- `Judge ID` are enforced to match IDs in `ids_judges.csv`
+- `Judge ID` are enforced to match IDs in `ids_judges.csv` and will throw warnings otherwise
 
+### `output.csv`
+
+The output of the program averages the scores for each project, sorts them by category and performance, and includes other details like assigned judges, judges had, etc. It's meant to track overall judging progress and can be collected at any point during the process. The following is the structure:
+
+| Category | Student Project ID | Student Name | Title of Presentation | Average Total Score | Judges Num | Judges Had | Assigned Judges |
+|----------|-------------------|--------------|-----------------------|---------------------|------------|------------|----------------|
+| Animal and Plant (A) | APS01 | Jane Doe | The Effects of Microplastics on Aquatic Life | 85.5 | 3 | ASM, BJO, CWH | ASM, BJO, CWH |
+| Animal and Plant (A) | APS02 | John Smith | The Impact of Urbanization on Local Flora | 78.0 | 2 | BJO, CWH | ASM, BJO, CWH |
+| Math and Computer Science (MCS) | MCS01 | Alice Johnson | Machine Learning for Predicting Stock Prices | 92.0 | 3 | DLE, EBR, FDR | DLE, EBR, FDR |
+| ... | ... | ... | ... | ... | ... | ... | ... |
 
 
 ## Running the Program
 
-```sh
-# Basic usage (checks for updates every 1 minute)
-python main.py --interval 1
+### Streamlit Web Interface
 
-# only add flags like --no_verify or --no_check if you're debugging/testing
+```sh
+uv run streamlit run st.py
 ```
 
-Overall, the system validates:
-- Judge IDs entered to the form exist in `ids_judges.csv`
-- Project IDs entered to the form are registered in `ids_categories.csv`
-- No duplicate scores from same judge
-- Judges only score assigned projects
-- Projects have minimum number of required judges
+The web interface as shown below features three tabs:
+1. Searching for a student: enter ID or name and it will pull up information about the student (e.g. project title, assigned/received judges, etc). 
+2. Searching for a judge: enter ID or name, it will provide info on what projects someone has judged so far. 
+3. Processing and viewing scores: clicking the button scrapes the data from the google sheet connected to the form, processes everything, and optionally sends it back to a new tab in the remote sheet. The updated data is visible and available locally as well. There are options to "verify validity" (e.g. check for sufficient judges, project ID exists, duplicate entries, judge in allowed list) and check for updates. 
 
-Check `njas_judging.log` for errors and warnings!
-
-Running the program produces three relevant outputs:
-
-- `output/output.csv` - Aggregated scores with average totals and judge counts
-- `output/output.md` - Formatted markdown tables by category
-- Google Sheets `aggregated_scores` worksheet
-
-Once you're done with the entire fair you can run 
-```sh
-python verify_done.py
-```
-to confirm that all registered participants have been judged. 
+![interface](interface.png)
 
 ## License
 MIT
