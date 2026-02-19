@@ -16,11 +16,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger()
 
-st.set_page_config(page_title="science_fair Judging System",
+st.set_page_config(page_title="Science Fair Judging System",
                    page_icon="📊", layout="wide")
 
 # configure for your own use
-data_dir = "2025"
+data_dir = "data"
 out_dir = "output"
 
 st.title("Science Fair Judging System")

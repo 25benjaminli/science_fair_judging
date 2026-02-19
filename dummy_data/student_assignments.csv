@@ -1,0 +1,16 @@
+Category,ID (project),Student Last Name,Student First Name,Title of Presentation,Judge 1,Judge 2,Judge 3,Judge 4,Judge 5,Judge 6
+Math/Computer Science (MCS),MCS01,Patel,Arjun,MACHINE LEARNING APPROACHES TO PREDICTING CHESS ENDGAME OUTCOMES,Darius Okonkwo,Aiko Tanaka,Ibrahim Al-Rashid,Hana Suzuki,Quinn Adebayo,Camille Dupont
+,MCS02,Torres,Elena,OPTIMIZING DIJKSTRA'S ALGORITHM FOR SPARSE REAL-WORLD ROAD NETWORKS,Darius Okonkwo,Aiko Tanaka,Ibrahim Al-Rashid,Hana Suzuki,Quinn Adebayo,Camille Dupont
+,MCS03,Kim,David,CRYPTOGRAPHIC HASH FUNCTION COLLISION RESISTANCE IN LOW-ENTROPY ENVIRONMENTS,Darius Okonkwo,Aiko Tanaka,Ibrahim Al-Rashid,Hana Suzuki,Quinn Adebayo,Camille Dupont
+,MCS04,Okafor,Zara,NEURAL NETWORK ARCHITECTURE COMPARISON FOR HANDWRITTEN DIGIT RECOGNITION,Darius Okonkwo,Aiko Tanaka,Ibrahim Al-Rashid,Hana Suzuki,Quinn Adebayo,Camille Dupont
+,MCS05,Nguyen,Marcus,PROBABILISTIC MODELING OF TRAFFIC FLOW USING MARKOV CHAINS,Darius Okonkwo,Aiko Tanaka,Ibrahim Al-Rashid,Hana Suzuki,Quinn Adebayo,Camille Dupont
+Environmental Sciences (ENV),ENV01,Fischer,Lena,MICROPLASTIC CONCENTRATION GRADIENTS IN URBAN STORMWATER RUNOFF,Darius Okonkwo,Reza Tehrani,Camille Dupont,Nadia Sokolov,Boris Volkov,Aiko Tanaka
+,ENV02,Reyes,Sofia,EFFECT OF SOIL PH VARIATION ON NATIVE PRAIRIE GRASS GERMINATION RATES,Darius Okonkwo,Reza Tehrani,Camille Dupont,Nadia Sokolov,Boris Volkov,Aiko Tanaka
+,ENV03,Adeyemi,Kofi,CARBON SEQUESTRATION EFFICIENCY IN RESTORED VS. UNDISTURBED WETLANDS,Darius Okonkwo,Reza Tehrani,Camille Dupont,Nadia Sokolov,Boris Volkov,Aiko Tanaka
+,ENV04,Johansson,Mia,LICHENS AS BIOINDICATORS OF ATMOSPHERIC NITROGEN DEPOSITION IN URBAN PARKS,Darius Okonkwo,Reza Tehrani,Camille Dupont,Nadia Sokolov,Boris Volkov,Aiko Tanaka
+,ENV05,Chakraborty,Priya,HEAVY METAL ACCUMULATION IN EARTHWORMS ACROSS INDUSTRIALLY CONTAMINATED SOIL GRADIENTS,Darius Okonkwo,Reza Tehrani,Camille Dupont,Nadia Sokolov,Boris Volkov,Aiko Tanaka
+Health and Medicine (HM),HM01,Alvarez,Rafael,CORRELATION BETWEEN SLEEP DURATION AND WORKING MEMORY PERFORMANCE IN ADOLESCENTS,Camille Dupont,Gabriel Moreau,Hana Suzuki,Quinn Adebayo,Aiko Tanaka,Ibrahim Al-Rashid
+,HM02,Leblanc,Isabelle,ANTIMICROBIAL EFFICACY OF MANUKA HONEY ON STAPHYLOCOCCUS EPIDERMIDIS BIOFILMS,Camille Dupont,Gabriel Moreau,Hana Suzuki,Quinn Adebayo,Aiko Tanaka,Ibrahim Al-Rashid
+,HM03,Yamamoto,Kenji,DIETARY FIBER INTAKE AND GUT MICROBIOME DIVERSITY IN HIGH SCHOOL STUDENTS,Camille Dupont,Gabriel Moreau,Hana Suzuki,Quinn Adebayo,Aiko Tanaka,Ibrahim Al-Rashid
+,HM04,Osei,Abena,BLUE LIGHT EXPOSURE FROM SCREENS AND MELATONIN SUPPRESSION IN TEENAGERS,Camille Dupont,Gabriel Moreau,Hana Suzuki,Quinn Adebayo,Aiko Tanaka,Ibrahim Al-Rashid
+,HM05,Brandt,Tobias,EFFICACY OF CURCUMIN AS AN ANTI-INFLAMMATORY AGENT IN IN VITRO MACROPHAGE ASSAYS,Camille Dupont,Gabriel Moreau,Hana Suzuki,Quinn Adebayo,Aiko Tanaka,Ibrahim Al-Rashid

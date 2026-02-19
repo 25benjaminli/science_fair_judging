@@ -1,10 +1,10 @@
 import pandas as pd
 
-data_dir = "2025"
+data_dir = "data"
 output_dir = "output"
-ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
+student_assignments = pd.read_csv(f"{data_dir}/student_assignments.csv")
 id_list = [str(x).strip().upper()
-           for x in ids_categories['ID (project)'].tolist()]
+           for x in student_assignments['ID (project)'].tolist()]
 
 final_scores = pd.read_csv(f"{output_dir}/output.csv")
 final_scores_list = [str(x).strip().upper()

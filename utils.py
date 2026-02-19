@@ -22,24 +22,24 @@ SCORING_COLUMNS = [
 
 def generate_csv(data_dir, out_dir):
     scores = pd.read_csv(f"{data_dir}/raw_scores.csv")
-    ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
+    student_assignments = pd.read_csv(f"{data_dir}/student_assignments.csv")
 
-    # forward fill ids_categories to get category for each project id
-    mask = ids_categories['ID (project)'].notna()
-    ids_categories.loc[mask,
-                       'Category'] = ids_categories.loc[mask, 'Category'].ffill()
+    # forward fill student_assignments to get category for each project id
+    mask = student_assignments['ID (project)'].notna()
+    student_assignments.loc[mask,
+                       'Category'] = student_assignments.loc[mask, 'Category'].ffill()
 
-    ids_categories = ids_categories[ids_categories['ID (project)'].notna()].copy(
+    student_assignments = student_assignments[student_assignments['ID (project)'].notna()].copy(
     )
 
     # send to csv to inspect (debug)
-    # ids_categories.to_csv(f"{out_dir}/ids_categories_filled.csv", index=False)
+    # student_assignments.to_csv(f"{out_dir}/student_assignments_filled.csv", index=False)
 
     logger.info(f"Number of judging entries: {len(scores)}")
 
     # merge scores with category info so all student data in one df based on project id
     merged = scores.merge(
-        ids_categories[['ID (project)', 'Category',
+        student_assignments[['ID (project)', 'Category',
                         'Student First Name', 'Student Last Name', 'Title of Presentation']],
         left_on='Student Project ID',
         right_on='ID (project)',
@@ -91,10 +91,10 @@ def generate_csv(data_dir, out_dir):
         ascending=[True, False]
     )
 
-    # add Assigned Judges column based on ids_categories and ids_judges
+    # add Assigned Judges column based on student_assignments and ids_judges
     ids_judges_df = pd.read_csv(f"{data_dir}/ids_judges.csv")
     project_dict = get_necessary_judges(
-        ids_categories, ids_judges_df, final_df)
+        student_assignments, ids_judges_df, final_df)
     final_df['Assigned Judges'] = final_df['Student Project ID'].apply(
         lambda x: ','.join(project_dict[x]) if x in project_dict else '')
 
@@ -108,26 +108,26 @@ def generate_csv(data_dir, out_dir):
     return final_df
 
 
-def get_necessary_judges(ids_categories, ids_judges, output):
+def get_necessary_judges(student_assignments, ids_judges, output):
     project_dict = {}
     for index, row in output.iterrows():
         # get the row associated with the current project id
         project_id = row['Student Project ID']
 
-        ids_categories_row = ids_categories[ids_categories['ID (project)']
+        student_assignments_row = student_assignments[student_assignments['ID (project)']
                                             == project_id]
         judges = []
-        if len(ids_categories_row) != 1:
+        if len(student_assignments_row) != 1:
             logger.error(
-                f"Student Project ID {project_id} not found or duplicated in ids_categories.csv")
+                f"Student Project ID {project_id} not found or duplicated in student_assignments.csv")
             continue
 
         # print("current project id", project_id)
         for j in range(1, 7):
-            if pd.isna(ids_categories_row[f"Judge {j}"].values[0]):
+            if pd.isna(student_assignments_row[f"Judge {j}"].values[0]):
                 continue
             judges.append(
-                str(ids_categories_row[f"Judge {j}"].values[0]).upper())
+                str(student_assignments_row[f"Judge {j}"].values[0]).upper())
 
         project_dict[project_id] = []
         for judge in judges:
@@ -159,12 +159,12 @@ def verify_validity(final_scores, data_dir, out_dir):
     judge_ids_list = [str(x).strip().upper()
                       for x in ids_judges['JUDGE ID'].tolist()]
 
-    ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
+    student_assignments = pd.read_csv(f"{data_dir}/student_assignments.csv")
     id_list = [str(x).strip().upper()
-               for x in ids_categories['ID (project)'].tolist()]
+               for x in student_assignments['ID (project)'].tolist()]
 
     project_dict = get_necessary_judges(
-        ids_categories, ids_judges, final_scores)
+        student_assignments, ids_judges, final_scores)
 
     passed = True
 
@@ -207,15 +207,15 @@ def verify_validity(final_scores, data_dir, out_dir):
 
 def get_names(data_dir):
     placements = pd.read_csv(f"{data_dir}/placements.csv")
-    ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
+    student_assignments = pd.read_csv(f"{data_dir}/student_assignments.csv")
 
     placements = placements.drop(columns=['Student Name'])
     for index, current_row in placements.iterrows():
         project_id = current_row['Student Project ID']
-        id_row = ids_categories[ids_categories['ID (project)'] == project_id]
+        id_row = student_assignments[student_assignments['ID (project)'] == project_id]
         if len(id_row) == 0:
             logger.warning(
-                f"Project ID {project_id} not found in ids_categories")
+                f"Project ID {project_id} not found in student_assignments")
             continue
         fname, lname = id_row['Student First Name'].values[0], id_row['Student Last Name'].values[0]
         # print("fname", fname, "lname", lname)
@@ -230,7 +230,7 @@ def get_names(data_dir):
 
 if __name__ == "__main__":
     # sanity check, you can also run the processing logic from here without the UI
-    data_dir = "2025"
+    data_dir = "data"
     out_dir = "output"
     final_scores = generate_csv(data_dir, out_dir)
     validity_passed = verify_validity(final_scores, data_dir, out_dir)
