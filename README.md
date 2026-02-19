@@ -1,14 +1,14 @@
 # Science Fair Judging App
 
-This branch is a prototype Flask + SQLite web app. It's end-to-end, managing the judge signup, score entering, and processing in one interface. Assumes that student data is already available (check [Student Data](#student-data) to see how it should be formatted). 
+This branch is a prototype Flask + SQLite web app. It's end-to-end, managing the judge signup, score entering, and processing in one interface. Assumes that student data is already available (check [Setup](#setup) to see how it should be formatted). 
 
 ## Setup
 
 1. Create a virtual environment (e.g. virtualenv, conda), use a package manager like [uv](https://github.com/astral-sh/uv), or install in your base environment. The only external dependencies are flask and pandas (e.g. run `pip install flask pandas`). 
 
-2. Create a .env file. Set `ADMIN_PASSWORD`, this will be the password used to access the admin interface. Only set `FLASK_ENV` to production if deploying to a production environment; otherwise, leave it unset. 
+2. Create a .env file. First, set `ADMIN_PASSWORD`, this will be the password used to access the admin interface. Next, set `SECRET_KEY`, run the following command and paste the output as the value `python -c 'import secrets; print(secrets.token_hex())'`. Only set `FLASK_ENV` to production if deploying to a production environment; otherwise, leave it unset. 
 
-3. Place student+project data in `data/student_assignments.csv`. Dummy data is included at `dummy_data.csv`. Required columns (more is OK, but modify the DB logic accordingly):
+3. Place student+project data in `data/student_assignments.csv`. Dummy data for testing is included at `dummy_data.csv`. Required columns (more is OK, but modify the DB logic accordingly):
 
 - `Category` — project category (can span multiple rows; forward-filled automatically)
 - `ID (project)` — unique project ID
