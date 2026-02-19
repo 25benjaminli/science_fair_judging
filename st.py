@@ -16,11 +16,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger()
 
-st.set_page_config(page_title="science_fair Judging System",
+st.set_page_config(page_title="Science Fair Judging System",
                    page_icon="📊", layout="wide")
 
 # configure for your own use
-data_dir = "2025"
+data_dir = "data"
 out_dir = "output"
 
 st.title("Science Fair Judging System")
@@ -189,7 +189,7 @@ verify_validity_flag = st.sidebar.checkbox(
 check_updates = st.sidebar.checkbox(
     "Check for updates", value=True, help="Only process if spreadsheet has changed")
 upload_to_sheets = st.sidebar.checkbox(
-    "Upload to Google Sheets", value=True, help="Upload processed results to Google Sheets")
+    "Upload to Google Sheets", value=False, help="Upload processed results to Google Sheets")
 
 with tab3:
     if st.button("Process Scores", type="primary"):

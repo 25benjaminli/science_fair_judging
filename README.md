@@ -11,8 +11,9 @@ This is built on software developed for the 2025 New Jersey Academy of Science (
 uv sync
 ```
 
-3. Set up Google Sheets API:
-   - Create a service account and download the credentials JSON file
+3. Set up google form and google sheets (*if not working with dummy data):
+   - Create a google form. I set up a simple google form with the "multiple choice grid" option titled "Presentation Content" (rename if needed, just adjust the filtering code). Enable exporting to google sheets, then open that sheet
+   - Create a service account and download the credentials JSON file. [This](https://ai2.appinventor.mit.edu/reference/other/googlesheets-api-setup.html) tutorial may be helpful.
    - Share your Google Spreadsheet with the service account email
    - Create a `.env` file in the project root:
    ```
@@ -21,9 +22,9 @@ uv sync
 
 ## Data Format
 
-All input files should be placed in the `2025` directory. Fair organizers should stick to the following formats for the program to work correctly. The program performs various checks to ensure data integrity but the **data must be in the correct format.** I recommend doing some dry runs with dummy data to verify the program is working and understand how to operate it.
+Dummy data is provided in the `dummy_data` directory for testing. Create a directory `data` and copy the dummy data files into it, then delete it if you have your own data. Explanations of the relevant files are below. The program performs various checks to ensure data integrity but the **data must be in the correct format.** 
 
-### `ids_categories.csv`
+### `student_assignments.csv`
 
 Maps student projects to categories and assigned judges.
 
@@ -54,7 +55,7 @@ List of all judges with unique identifiers. These IDs must be consistent through
 
 ### `raw_scores.csv`
 
-This is acquired via the spreadsheet connected to the google form. I set up a simple google form with the "multiple choice grid" option titled "presentation content" (although this could be named whatever you want, just adjust the filtering code). The resulting spreadsheet should look like this. 
+If you're working with the dummy data, this is already available under `dummy_data/raw_scores`. Otherwise, this is acquired via the spreadsheet connected to the google form. 
 
 | Timestamp | Email Address | Judge ID | Student Project ID | Presentation Content [Background] | Presentation Content [Originality] | Presentation Content [Methodology] | ... | Other Comments | Student Name |
 |-----------|---------------|----------|-------------------|----------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------|-----|----------------|--------------|
@@ -64,8 +65,8 @@ This is acquired via the spreadsheet connected to the google form. I set up a si
 
 **Key Points:**
 - The "..." represents additional scoring columns from the judging rubric
-- `Timestamp` and `Email Address` are ignored
-- `Student Project ID` are enforced to match IDs in `ids_categories.csv`
+- Other columns such as `Timestamp` and `Email Address` are ignored
+- `Student Project ID` are enforced to match IDs in `student_assignments.csv`
 - `Judge ID` are enforced to match IDs in `ids_judges.csv` and will throw warnings otherwise
 
 ### `output.csv`
