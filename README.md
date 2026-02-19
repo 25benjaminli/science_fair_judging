@@ -4,7 +4,12 @@ This branch is a prototype Flask + SQLite web app. It's end-to-end, managing the
 
 ## Setup
 
-1. Create a virtual environment (e.g. virtualenv, conda), use a package manager like [uv](https://github.com/astral-sh/uv), or install in your base environment. The only external dependencies are flask and pandas (e.g. run `pip install flask pandas`). 
+1. With python installed, run the following commands to create a virtual environment with virtualenv and install dependencies. Pipenv or conda also work. 
+```
+python3 -m venv judging
+source judging/bin/activate
+pip install flask pandas python-dotenv
+```
 
 2. Create a .env file. First, set `ADMIN_PASSWORD`, this will be the password used to access the admin interface. Next, set `SECRET_KEY`, run the following command and paste the output as the value `python -c 'import secrets; print(secrets.token_hex())'`. Only set `FLASK_ENV` to production if deploying to a production environment; otherwise, leave it unset. 
 

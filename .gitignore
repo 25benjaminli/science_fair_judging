@@ -4,6 +4,7 @@ science_fair_judging.log
 .env
 __pycache__/
 output/
+judging/
 
 # uv
 .venv/
