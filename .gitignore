@@ -1,9 +1,7 @@
 csvs/
-data/
 science_fair_judging.log
 .env
 __pycache__/
-output/
 
 # uv
 .venv/

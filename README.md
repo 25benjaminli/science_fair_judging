@@ -22,7 +22,7 @@ uv sync
 
 ## Data Format
 
-Dummy data is provided in the `dummy_data` directory for testing. Create a directory `data` and copy the dummy data files into it, then delete it if you have your own data. Explanations of the relevant files are below. The program performs various checks to ensure data integrity but the **data must be in the correct format.** 
+Dummy data is provided in the `data` directory for testing. Delete files if you have your own data. Explanations of the relevant files are below. The program performs various checks to ensure data integrity but the **data must be in the correct format.** 
 
 ### `student_assignments.csv`
 
@@ -55,7 +55,7 @@ List of all judges with unique identifiers. These IDs must be consistent through
 
 ### `raw_scores.csv`
 
-If you're working with the dummy data, this is already available under `dummy_data/raw_scores`. Otherwise, this is acquired via the spreadsheet connected to the google form. 
+If you're working with the dummy data, this is already available under `data/raw_scores.csv`. Otherwise, this is acquired via the spreadsheet connected to the google form. 
 
 | Timestamp | Email Address | Judge ID | Student Project ID | Presentation Content [Background] | Presentation Content [Originality] | Presentation Content [Methodology] | ... | Other Comments | Student Name |
 |-----------|---------------|----------|-------------------|----------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------|-----|----------------|--------------|

@@ -20,7 +20,7 @@ SCORING_COLUMNS = [
 ]
 
 
-def generate_csv(data_dir, out_dir):
+def generate_csv(data_dir):
     scores = pd.read_csv(f"{data_dir}/raw_scores.csv")
     student_assignments = pd.read_csv(f"{data_dir}/student_assignments.csv")
 
@@ -33,7 +33,7 @@ def generate_csv(data_dir, out_dir):
     )
 
     # send to csv to inspect (debug)
-    # student_assignments.to_csv(f"{out_dir}/student_assignments_filled.csv", index=False)
+    # student_assignments.to_csv(f"{data_dir}/student_assignments_filled.csv", index=False)
 
     logger.info(f"Number of judging entries: {len(scores)}")
 
@@ -103,7 +103,7 @@ def generate_csv(data_dir, out_dir):
         output_table += f"**{category}**\n\n"
         output_table += group_df.to_markdown(index=False) + "\n\n"
 
-    final_df.to_csv(f"{out_dir}/output.csv", index=False)
+    final_df.to_csv(f"{data_dir}/output.csv", index=False)
 
     return final_df
 
@@ -153,7 +153,7 @@ def get_necessary_judges(student_assignments, ids_judges, output):
     return project_dict
 
 
-def verify_validity(final_scores, data_dir, out_dir):
+def verify_validity(final_scores, data_dir):
 
     ids_judges = pd.read_csv(f"{data_dir}/ids_judges.csv")
     judge_ids_list = [str(x).strip().upper()
@@ -191,7 +191,7 @@ def verify_validity(final_scores, data_dir, out_dir):
                 text = f"Judge {judge_id} for {project_id} not in allowed list {project_dict[project_id]}!"
                 # this may be a problem but if more judges show up than expected then disregard
                 logger.warning(text)
-                passed = False
+                # passed = False
 
         required_judges = len(project_dict[project_id])
         if len(unique_judges_had) < required_judges:
@@ -231,9 +231,8 @@ def get_names(data_dir):
 if __name__ == "__main__":
     # sanity check, you can also run the processing logic from here without the UI
     data_dir = "data"
-    out_dir = "output"
-    final_scores = generate_csv(data_dir, out_dir)
-    validity_passed = verify_validity(final_scores, data_dir, out_dir)
+    final_scores = generate_csv(data_dir)
+    validity_passed = verify_validity(final_scores, data_dir)
     if validity_passed:
         logger.info("All checks passed!")
     else:
