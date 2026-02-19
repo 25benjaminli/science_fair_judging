@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Log In – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Science Fair Judging</span>
+    <div>
+        <a href="{{ url_for('login') }}">Log In</a>
+        <a href="{{ url_for('signup') }}">Sign Up</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="card">
+        <h1>Judge Log In</h1>
+        <p class="subtitle">Sign in with your approved judge account.</p>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Your username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Your password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Log In</button>
+        </form>
+
+        <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
+            Don't have an account? <a href="{{ url_for('signup') }}" class="link">Sign up</a>
+        </p>
+        <p style="text-align:center; margin-top:0.5rem; font-size:0.85rem; color: var(--text-muted);">
+            <a href="{{ url_for('admin_login') }}" class="link">Admin Login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

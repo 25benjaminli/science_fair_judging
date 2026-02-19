@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Raw Scores – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Admin Panel</span>
+    <div>
+        <a href="{{ url_for('admin_dashboard') }}">Judges</a>
+        <a href="{{ url_for('admin_results') }}">Results</a>
+        <a href="{{ url_for('admin_view_scores') }}">Raw Scores</a>
+        <a href="{{ url_for('admin_logout') }}">Log Out</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1>Raw Score Submissions</h1>
+<p style="color:var(--text-muted); margin-bottom:1rem;">All individual score entries from judges.</p>
+
+{% if scores %}
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Submitted</th>
+                    <th>Judge</th>
+                    <th>Judge ID</th>
+                    <th>Project</th>
+                    <th>BG</th>
+                    <th>Orig</th>
+                    <th>Meth</th>
+                    <th>Analy</th>
+                    <th>Interp</th>
+                    <th>Know</th>
+                    <th>Deliv</th>
+                    <th>Org</th>
+                    <th>Visual</th>
+                    <th>Q&A</th>
+                    <th>Total</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in scores %}
+                {% set total = s['background'] + s['originality'] + s['methodology'] + s['analysis'] + s['interpretation'] + s['knowledge'] + s['delivery'] + s['organization'] + s['visual_aids'] + s['questions'] %}
+                <tr>
+                    <td style="font-size:0.82rem;">{{ s['created_at'] }}</td>
+                    <td>{{ s['first_name'] }} {{ s['last_name'] }}</td>
+                    <td><code>{{ s['judge_id'] }}</code></td>
+                    <td><code>{{ s['student_project_id'] }}</code></td>
+                    <td>{{ s['background'] }}</td>
+                    <td>{{ s['originality'] }}</td>
+                    <td>{{ s['methodology'] }}</td>
+                    <td>{{ s['analysis'] }}</td>
+                    <td>{{ s['interpretation'] }}</td>
+                    <td>{{ s['knowledge'] }}</td>
+                    <td>{{ s['delivery'] }}</td>
+                    <td>{{ s['organization'] }}</td>
+                    <td>{{ s['visual_aids'] }}</td>
+                    <td>{{ s['questions'] }}</td>
+                    <td><strong>{{ total }}</strong></td>
+                    <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ s['comments'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <p style="color:var(--text-muted);">No scores submitted yet.</p>
+</div>
+{% endif %}
+{% endblock %}

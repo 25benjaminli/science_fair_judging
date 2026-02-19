@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Assign Projects – {{ judge['first_name'] }} {{ judge['last_name'] }}{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Admin Panel</span>
+    <div>
+        <a href="{{ url_for('admin_dashboard') }}">Judges</a>
+        <a href="{{ url_for('admin_results') }}">Results</a>
+        <a href="{{ url_for('admin_view_scores') }}">Raw Scores</a>
+        <a href="{{ url_for('admin_logout') }}">Log Out</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('admin_dashboard') }}" class="link">← Back to Dashboard</a></p>
+
+<div class="card" style="margin-top:1rem;">
+    <h1>Assign Projects</h1>
+    <p>
+        <strong>Judge:</strong> {{ judge['first_name'] }} {{ judge['last_name'] }}
+        (<code>{{ judge['judge_id'] }}</code>)
+        &nbsp;·&nbsp;
+        <strong>Currently assigned:</strong> {{ assigned_ids|length }} project(s)
+    </p>
+</div>
+
+<form id="assignForm" method="POST" action="{{ url_for('admin_assign_judge', judge_db_id=judge['id']) }}">
+    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+    {% for cat, projects in categories.items() %}
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+            <h2 style="margin-bottom:0;">{{ cat }}</h2>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline select-all-btn" data-category="{{ cat }}">Select All</button>
+                <button type="button" class="btn btn-sm btn-outline deselect-all-btn" data-category="{{ cat }}" style="margin-left:0.25rem;">Deselect All</button>
+                <button type="button" class="btn btn-sm btn-primary quick-assign-btn"
+                        data-url="{{ url_for('admin_assign_category', judge_db_id=judge['id'], category=cat) }}"
+                        style="margin-left:0.5rem;">Quick Assign Category</button>
+            </div>
+        </div>
+        {% for p in projects %}
+        <label style="display:flex; align-items:center; padding:0.4rem 0; border-bottom:1px solid var(--border); cursor:pointer;" data-category="{{ cat }}">
+            <input type="checkbox" name="projects" value="{{ p.id }}"
+                   {% if p.assigned %}checked{% endif %}
+                   style="width:18px; height:18px; margin-right:0.75rem; accent-color:var(--primary);">
+            <span>
+                <strong style="font-family:monospace;">{{ p.id }}</strong> –
+                {{ p.student_name }}
+                <span style="color:var(--text-muted); font-size:0.85rem;">· {{ p.title[:70] }}{% if p.title|length > 70 %}…{% endif %}</span>
+            </span>
+        </label>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <div style="position:sticky; bottom:0; background:var(--bg); padding:1rem 0; border-top:2px solid var(--border);">
+        <button type="submit" class="btn btn-success">Save Assignments</button>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline" style="margin-left:0.5rem;">Cancel</a>
+        <span id="selectedCount" style="margin-left:1rem; color:var(--text-muted);"></span>
+    </div>
+</form>
+
+<script>
+// Quick Assign Category via hidden form (avoids nested form issue)
+document.querySelectorAll('.quick-assign-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = btn.dataset.url;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '{{ session["csrf_token"] }}';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    });
+});
+
+// Select / Deselect all within a category
+document.querySelectorAll('.select-all-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const cat = btn.dataset.category;
+        document.querySelectorAll(`label[data-category="${cat}"] input[type="checkbox"]`).forEach(cb => cb.checked = true);
+        updateCount();
+    });
+});
+document.querySelectorAll('.deselect-all-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const cat = btn.dataset.category;
+        document.querySelectorAll(`label[data-category="${cat}"] input[type="checkbox"]`).forEach(cb => cb.checked = false);
+        updateCount();
+    });
+});
+
+function updateCount() {
+    const checked = document.querySelectorAll('input[name="projects"]:checked').length;
+    document.getElementById('selectedCount').textContent = checked + ' project(s) selected';
+}
+document.querySelectorAll('input[name="projects"]').forEach(cb => cb.addEventListener('change', updateCount));
+updateCount();
+</script>
+{% endblock %}

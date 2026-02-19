@@ -1,240 +1,271 @@
+"""Database operations, score processing, and shared helpers."""
+
+import os
+import re
+import sqlite3
+import hashlib
+import secrets
+
 import pandas as pd
-import logging
 
-# logging.basicConfig(filename='judging.log', level=logging.INFO,
-#                     format='%(levelname)s:%(message)s')
-logger = logging.getLogger()
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
 
-# specify yourself based on your form
+DATABASE = "judging.db"
+DATA_DIR = "data"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+
 SCORING_COLUMNS = [
-    'Presentation Content [Background]',
-    'Presentation Content [Originality of idea/purpose to research]',
-    'Presentation Content [Appropriateness of methodology/procedure/study design]',
-    'Presentation Content [Analysis of results]',
-    'Presentation Content [Interpretation of results/conclusion]',
-    'Presentation Content [Subject knowledge conveyed]',
-    'Presentation Skills [Delivery]',
-    'Presentation Skills [Organization of material]',
-    'Presentation Skills [Appropriateness of visual aids]',
-    'Presentation Skills [Ability to answer questions]'
+    "Presentation Content [Background]",
+    "Presentation Content [Originality of idea/purpose to research]",
+    "Presentation Content [Appropriateness of methodology/procedure/study design]",
+    "Presentation Content [Analysis of results]",
+    "Presentation Content [Interpretation of results/conclusion]",
+    "Presentation Content [Subject knowledge conveyed]",
+    "Presentation Skills [Delivery]",
+    "Presentation Skills [Organization of material]",
+    "Presentation Skills [Appropriateness of visual aids]",
+    "Presentation Skills [Ability to answer questions]",
 ]
 
+SCORING_SHORT_NAMES = [
+    "background",
+    "originality",
+    "methodology",
+    "analysis",
+    "interpretation",
+    "knowledge",
+    "delivery",
+    "organization",
+    "visual_aids",
+    "questions",
+]
 
-def generate_csv(data_dir, out_dir):
-    scores = pd.read_csv(f"{data_dir}/raw_scores.csv")
-    ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
+# ---------------------------------------------------------------------------
+# Database initialization
+# ---------------------------------------------------------------------------
 
-    # forward fill ids_categories to get category for each project id
-    mask = ids_categories['ID (project)'].notna()
-    ids_categories.loc[mask,
-                       'Category'] = ids_categories.loc[mask, 'Category'].ffill()
 
-    ids_categories = ids_categories[ids_categories['ID (project)'].notna()].copy(
+def init_db():
+    """Create tables if they don't exist."""
+    db = sqlite3.connect(DATABASE)
+    db.execute("PRAGMA journal_mode=WAL")
+    db.executescript("""
+        CREATE TABLE IF NOT EXISTS judges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            judge_id TEXT UNIQUE NOT NULL,
+            approved INTEGER DEFAULT 0,
+            created_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            judge_id TEXT NOT NULL,
+            student_project_id TEXT NOT NULL,
+            background INTEGER NOT NULL,
+            originality INTEGER NOT NULL,
+            methodology INTEGER NOT NULL,
+            analysis INTEGER NOT NULL,
+            interpretation INTEGER NOT NULL,
+            knowledge INTEGER NOT NULL,
+            delivery INTEGER NOT NULL,
+            organization INTEGER NOT NULL,
+            visual_aids INTEGER NOT NULL,
+            questions INTEGER NOT NULL,
+            comments TEXT DEFAULT '',
+            student_name TEXT DEFAULT '',
+            created_at TEXT,
+            UNIQUE(judge_id, student_project_id)
+        );
+        CREATE TABLE IF NOT EXISTS judge_assignments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            judge_id TEXT NOT NULL,
+            student_project_id TEXT NOT NULL,
+            UNIQUE(judge_id, student_project_id)
+        );
+    """)
+    db.commit()
+    db.close()
+
+
+# ---------------------------------------------------------------------------
+# Password helpers
+# ---------------------------------------------------------------------------
+
+def hash_password(password):
+    salt = secrets.token_hex(16)
+    h = hashlib.sha256((salt + password).encode()).hexdigest()
+    return f"{salt}${h}"
+
+
+def verify_password(stored, password):
+    salt, h = stored.split("$", 1)
+    return hashlib.sha256((salt + password).encode()).hexdigest() == h
+
+
+# ---------------------------------------------------------------------------
+# Judge ID generation
+# ---------------------------------------------------------------------------
+
+def generate_judge_id(first_name, last_name, db):
+    """Generate a unique 3-4 letter judge ID from name initials."""
+    base = (first_name[0] + last_name[:2]).upper()
+    candidate = base
+    suffix = 1
+    while db.execute("SELECT 1 FROM judges WHERE judge_id = ?", (candidate,)).fetchone():
+        candidate = base + str(suffix)
+        suffix += 1
+    return candidate
+
+
+# ---------------------------------------------------------------------------
+# Input validation
+# ---------------------------------------------------------------------------
+
+def sanitize_text(value, max_len=200):
+    """Strip and truncate text input."""
+    return str(value).strip()[:max_len]
+
+
+def validate_username(username):
+    """Username must be 3-50 alphanumeric/underscore chars."""
+    return bool(re.match(r'^[a-zA-Z0-9_]{3,50}$', username))
+
+
+# ---------------------------------------------------------------------------
+# Student data helpers (from student_assignments.csv)
+# ---------------------------------------------------------------------------
+
+def load_student_projects():
+    """Load and return the student_assignments DataFrame with forward-filled categories."""
+    path = os.path.join(DATA_DIR, "student_assignments.csv")
+    if not os.path.exists(path):
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    mask = df["ID (project)"].notna()
+    df.loc[mask, "Category"] = df.loc[mask, "Category"].ffill()
+    df = df[df["ID (project)"].notna()].copy()
+    df["ID (project)"] = df["ID (project)"].astype(str).str.strip().str.upper()
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Score processing
+# ---------------------------------------------------------------------------
+
+def process_scores(db):
+    """Process all scores from the database and generate output CSV. Returns the DataFrame."""
+    rows = db.execute("SELECT * FROM scores").fetchall()
+    if not rows:
+        return None
+
+    records = []
+    for r in rows:
+        record = {
+            "Judge ID": r["judge_id"],
+            "Student Project ID": r["student_project_id"].strip().upper(),
+        }
+        for short, full in zip(SCORING_SHORT_NAMES, SCORING_COLUMNS):
+            record[full] = r[short]
+        record["Other Comments"] = r["comments"]
+        record["Student Name"] = r["student_name"]
+        records.append(record)
+
+    scores_df = pd.DataFrame(records)
+
+    student_assignments = load_student_projects()
+    if student_assignments.empty:
+        return None
+
+    merged = scores_df.merge(
+        student_assignments[["ID (project)", "Category", "Student First Name",
+                             "Student Last Name", "Title of Presentation"]],
+        left_on="Student Project ID",
+        right_on="ID (project)",
+        how="left",
     )
-
-    # send to csv to inspect (debug)
-    # ids_categories.to_csv(f"{out_dir}/ids_categories_filled.csv", index=False)
-
-    logger.info(f"Number of judging entries: {len(scores)}")
-
-    # merge scores with category info so all student data in one df based on project id
-    merged = scores.merge(
-        ids_categories[['ID (project)', 'Category',
-                        'Student First Name', 'Student Last Name', 'Title of Presentation']],
-        left_on='Student Project ID',
-        right_on='ID (project)',
-        how='left'
-    )
-
-    merged = merged.drop(columns=['ID (project)'])
-    merged['Student Project ID'] = merged['Student Project ID'].astype(
+    merged = merged.drop(columns=["ID (project)"])
+    merged["Student Project ID"] = merged["Student Project ID"].astype(
         str).str.strip().str.upper()
-    merged['Judge ID'] = merged['Judge ID'].astype(str).str.strip().str.upper()
+    merged["Judge ID"] = merged["Judge ID"].astype(str).str.strip().str.upper()
 
     for col in SCORING_COLUMNS:
-        merged[col] = pd.to_numeric(merged[col], errors='coerce')
+        merged[col] = pd.to_numeric(merged[col], errors="coerce")
 
-    # group dataframe by identical project IDs, calc score means, take first student name, etc.
-    results = merged.groupby(['Student Project ID']).agg({
-        **{col: 'mean' for col in SCORING_COLUMNS},
-        # x is the series of judge IDs
-        'Judge ID': lambda x: ','.join(sorted(set(x.astype(str)))),
-        'Student First Name': 'first',
-        'Student Last Name': 'first',
-        'Category': 'first',
-        'Title of Presentation': 'first'
-    }).reset_index()
+    results = merged.groupby(["Student Project ID"]).agg(
+        {
+            **{col: "mean" for col in SCORING_COLUMNS},
+            "Judge ID": lambda x: ",".join(sorted(set(x.astype(str)))),
+            "Student First Name": "first",
+            "Student Last Name": "first",
+            "Category": "first",
+            "Title of Presentation": "first",
+        }
+    ).reset_index()
 
-    results = results.rename(columns={
-        'Judge ID': 'Judges Had',
-    })
-    results['Judges Num'] = results['Judges Had'].apply(
-        lambda x: len(x.split(',')) if pd.notna(x) else 0)
-
-    # Average Total Score is just the average of all the scoring columns, reason why the other columns are there is in case you need more analysis
-    results['Average Total Score'] = sum(
+    results = results.rename(columns={"Judge ID": "Judges Had"})
+    results["Judges Num"] = results["Judges Had"].apply(
+        lambda x: len(x.split(",")) if pd.notna(x) else 0
+    )
+    results["Average Total Score"] = sum(
         results[col] for col in SCORING_COLUMNS)
-    results['Average Total Score'] = results['Average Total Score'].round(3)
-    results['Student Name'] = results['Student First Name'] + \
-        " " + results['Student Last Name']
+    results["Average Total Score"] = results["Average Total Score"].round(3)
+    results["Student Name"] = results["Student First Name"] + \
+        " " + results["Student Last Name"]
 
     final_cols = [
-        'Category', 'Student Project ID', 'Student Name', 'Title of Presentation',
-        'Average Total Score', 'Judges Num', 'Judges Had'
+        "Category", "Student Project ID", "Student Name",
+        "Title of Presentation", "Average Total Score", "Judges Num", "Judges Had",
     ]
-    # print("results columns after processing", results.columns)
     final_df = results[final_cols].copy()
-
-    # Sort by category and score
     final_df = final_df.sort_values(
-        by=['Category', 'Average Total Score'],
-        ascending=[True, False]
+        by=["Category", "Average Total Score"], ascending=[True, False]
     )
 
-    # add Assigned Judges column based on ids_categories and ids_judges
-    ids_judges_df = pd.read_csv(f"{data_dir}/ids_judges.csv")
-    project_dict = get_necessary_judges(
-        ids_categories, ids_judges_df, final_df)
-    final_df['Assigned Judges'] = final_df['Student Project ID'].apply(
-        lambda x: ','.join(project_dict[x]) if x in project_dict else '')
+    # Add assigned judges column from judge_assignments table
+    def resolve_assigned(pid):
+        assigned_rows = db.execute(
+            "SELECT judge_id FROM judge_assignments WHERE student_project_id = ?",
+            (pid,),
+        ).fetchall()
+        return ",".join(sorted(r["judge_id"].upper() for r in assigned_rows))
 
-    output_table = ""
-    for category, group_df in final_df.groupby('Category'):
-        output_table += f"**{category}**\n\n"
-        output_table += group_df.to_markdown(index=False) + "\n\n"
+    final_df["Assigned Judges"] = final_df["Student Project ID"].apply(
+        resolve_assigned)
 
-    final_df.to_csv(f"{out_dir}/output.csv", index=False)
-
+    final_df.to_csv(os.path.join(DATA_DIR, "output.csv"), index=False)
     return final_df
 
 
-def get_necessary_judges(ids_categories, ids_judges, output):
-    project_dict = {}
-    for index, row in output.iterrows():
-        # get the row associated with the current project id
-        project_id = row['Student Project ID']
+def verify_validity(final_df, db):
+    """Run validity checks using DB assignments."""
+    issues = []
+    for _, row in final_df.iterrows():
+        pid = row["Student Project ID"]
+        judges_had = [j.strip()
+                      for j in str(row["Judges Had"]).split(",") if j.strip()]
+        unique_had = set(judges_had)
 
-        ids_categories_row = ids_categories[ids_categories['ID (project)']
-                                            == project_id]
-        judges = []
-        if len(ids_categories_row) != 1:
-            logger.error(
-                f"Student Project ID {project_id} not found or duplicated in ids_categories.csv")
-            continue
+        if len(unique_had) != row["Judges Num"]:
+            issues.append(f"Duplicate judge entries for {pid}: {judges_had}")
 
-        # print("current project id", project_id)
-        for j in range(1, 7):
-            if pd.isna(ids_categories_row[f"Judge {j}"].values[0]):
-                continue
-            judges.append(
-                str(ids_categories_row[f"Judge {j}"].values[0]).upper())
+        assigned_rows = db.execute(
+            "SELECT judge_id FROM judge_assignments WHERE student_project_id = ?",
+            (pid,),
+        ).fetchall()
+        assigned_ids = [r["judge_id"].upper() for r in assigned_rows]
 
-        project_dict[project_id] = []
-        for judge in judges:
-            # Handle judge names - split on first space
-            judge_parts = judge.split(" ", 1)
-            if len(judge_parts) != 2:
-                logger.warning(
-                    f"Judge name '{judge}' does not contain first and last name")
-                continue
+        for jid in unique_had:
+            if assigned_ids and jid not in assigned_ids:
+                issues.append(
+                    f"Judge {jid} scored {pid} but not in assigned list {assigned_ids}")
 
-            fname = judge_parts[0].upper()
-            lname = judge_parts[1].upper()
-            judge_id = [ids_judges.loc[judgeidx]["JUDGE ID"].upper() for judgeidx in range(len(
-                ids_judges)) if ids_judges.loc[judgeidx]["FIRST"].upper() == fname and ids_judges.loc[judgeidx]["LAST"].upper() == lname]
-            if len(judge_id) != 1:
-                logger.warning(
-                    f"number of judge ids for judge {judge} found is {len(judge_id)}")
-            else:
-                judge_id = judge_id[0]
-                project_dict[project_id].append(judge_id)
-        project_dict[project_id] = sorted(project_dict[project_id])
+        if assigned_ids and len(unique_had) < len(assigned_ids):
+            issues.append(
+                f"{pid}: has {len(unique_had)} judges, expected {len(assigned_ids)}")
 
-    return project_dict
-
-
-def verify_validity(final_scores, data_dir, out_dir):
-
-    ids_judges = pd.read_csv(f"{data_dir}/ids_judges.csv")
-    judge_ids_list = [str(x).strip().upper()
-                      for x in ids_judges['JUDGE ID'].tolist()]
-
-    ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
-    id_list = [str(x).strip().upper()
-               for x in ids_categories['ID (project)'].tolist()]
-
-    project_dict = get_necessary_judges(
-        ids_categories, ids_judges, final_scores)
-
-    passed = True
-
-    for i, row in final_scores.iterrows():
-        # confirm that Judges Num matches the number of unique judges in Judges Had
-        project_id = row['Student Project ID']
-        judges_had = [x.strip()
-                      for x in str(row['Judges Had']).split(",") if x.strip()]
-        unique_judges_had = set(judges_had)
-        if len(unique_judges_had) != row['Judges Num']:
-            text = f"all judges should be unique for {project_id}, got {judges_had}"
-            # a real problem, duplicate entries cannot exist!!
-            logger.error(text)
-            passed = False
-
-        if project_id not in project_dict:
-            logger.error(f"Project {project_id} not found in project_dict")
-            passed = False
-            continue
-
-        # confirm that all judges in Judges Had are in the allowed judges list
-        for judge_id in unique_judges_had:
-            if judge_id not in project_dict[project_id]:
-                text = f"Judge {judge_id} for {project_id} not in allowed list {project_dict[project_id]}!"
-                # this may be a problem but if more judges show up than expected then disregard
-                logger.warning(text)
-                passed = False
-
-        required_judges = len(project_dict[project_id])
-        if len(unique_judges_had) < required_judges:
-            # a real problem - each project must have enough judges
-            logger.error(
-                f"Project {project_id} has {len(unique_judges_had)} judges but was assigned {required_judges}")
-            passed = False
-
-    return passed
-
-# utility function, use if you desire
-
-
-def get_names(data_dir):
-    placements = pd.read_csv(f"{data_dir}/placements.csv")
-    ids_categories = pd.read_csv(f"{data_dir}/ids_categories.csv")
-
-    placements = placements.drop(columns=['Student Name'])
-    for index, current_row in placements.iterrows():
-        project_id = current_row['Student Project ID']
-        id_row = ids_categories[ids_categories['ID (project)'] == project_id]
-        if len(id_row) == 0:
-            logger.warning(
-                f"Project ID {project_id} not found in ids_categories")
-            continue
-        fname, lname = id_row['Student First Name'].values[0], id_row['Student Last Name'].values[0]
-        # print("fname", fname, "lname", lname)
-        placements.loc[index, 'Student First Name'] = fname
-        placements.loc[index, 'Student Last Name'] = lname
-
-    # sort placements by place, then by last name (A-Z)
-    placements = placements.sort_values(
-        by=['prize winner', 'place', 'Student Last Name'], ascending=[True, False, True])
-    placements.to_csv(f"{data_dir}/placements_new.csv", index=False)
-
-
-if __name__ == "__main__":
-    # sanity check, you can also run the processing logic from here without the UI
-    data_dir = "2025"
-    out_dir = "output"
-    final_scores = generate_csv(data_dir, out_dir)
-    validity_passed = verify_validity(final_scores, data_dir, out_dir)
-    if validity_passed:
-        logger.info("All checks passed!")
-    else:
-        logger.warning("Some checks failed, please review the logs.")
+    return issues

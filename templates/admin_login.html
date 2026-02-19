@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Admin Login – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Science Fair Judging – Admin</span>
+    <div>
+        <a href="{{ url_for('login') }}">Judge Login</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="card">
+        <h1>Admin Login</h1>
+        <p class="subtitle">Enter the admin password to continue.</p>
+
+        <form method="POST" action="{{ url_for('admin_login') }}">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <div class="form-group">
+                <label for="password">Admin Password</label>
+                <input type="password" id="password" name="password" required placeholder="Admin password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Log In</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

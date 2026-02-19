@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Score {{ project_id }} – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Science Fair Judging</span>
+    <div>
+        <a href="{{ url_for('judge_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('logout') }}">Log Out</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('judge_dashboard') }}" class="link">← Back to Dashboard</a></p>
+
+<div class="card" style="margin-top:1rem;">
+    <h1>Score: {{ project_id }}</h1>
+    <p style="margin-bottom: 0.5rem;">
+        <strong>Student:</strong> {{ project_info['Student First Name'] }} {{ project_info['Student Last Name'] }}<br>
+        <strong>Category:</strong> {{ project_info['Category'] }}<br>
+        <strong>Title:</strong> {{ project_info['Title of Presentation'] }}
+    </p>
+</div>
+
+<div class="card">
+    <h2>Scoring Rubric</h2>
+    <p style="color:var(--text-muted); margin-bottom:1rem;">Rate each criterion from 1 (lowest) to 10 (highest).</p>
+
+    <form method="POST" action="{{ url_for('score_project', project_id=project_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <h3 style="margin-top:0.5rem; margin-bottom:0.75rem;">Presentation Content</h3>
+        <div class="score-grid">
+            {% for short, full in scoring_fields %}
+                {% if 'Content' in full %}
+                <label for="{{ short }}">{{ full.split('[')[1].rstrip(']') }}</label>
+                <input type="number" id="{{ short }}" name="{{ short }}" min="1" max="10" required
+                    value=""
+                    placeholder="1-10">
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <h3 style="margin-top:1.25rem; margin-bottom:0.75rem;">Presentation Skills</h3>
+        <div class="score-grid">
+            {% for short, full in scoring_fields %}
+                {% if 'Skills' in full %}
+                <label for="{{ short }}">{{ full.split('[')[1].rstrip(']') }}</label>
+                <input type="number" id="{{ short }}" name="{{ short }}" min="1" max="10" required
+                    value=""
+                    placeholder="1-10">
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="form-group" style="margin-top:1.25rem;">
+            <label for="comments">Other Comments (optional)</label>
+            <textarea id="comments" name="comments" rows="3" placeholder="Enter any additional comments..."></textarea>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+            <button type="submit" class="btn btn-success">Submit Score</button>
+            <a href="{{ url_for('judge_dashboard') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-advance to next input on valid entry (debounced for 2-digit numbers like 10)
+document.querySelectorAll('input[type="number"]').forEach((input, i, all) => {
+    let timer = null;
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        const val = parseInt(this.value);
+        // Advance immediately on single digits 2-9, debounce on 1 (could become 10)
+        if (val >= 2 && val <= 9 && i < all.length - 1) {
+            all[i + 1].focus();
+        } else if (val === 1) {
+            timer = setTimeout(() => {
+                if (i < all.length - 1) all[i + 1].focus();
+            }, 500);
+        } else if (val === 10 && i < all.length - 1) {
+            all[i + 1].focus();
+        }
+    });
+});
+</script>
+{% endblock %}

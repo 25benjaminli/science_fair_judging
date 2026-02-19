@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Science Fair Judging</span>
+    <div>
+        <a href="{{ url_for('judge_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('logout') }}">Log Out</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1>Welcome, {{ session['judge_name'] }}</h1>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="number">{{ judge['judge_id'] }}</div>
+        <div class="label">Your Judge ID</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ scored_ids|length }}</div>
+        <div class="label">Projects Scored</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ projects|length }}</div>
+        <div class="label">Assigned Projects</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Student Projects</h2>
+    <p style="color: var(--text-muted); margin-bottom: 1rem;">Score your assigned projects below. Once submitted, scores are final.</p>
+
+    <div class="form-group" style="margin-bottom: 1rem;">
+        <input type="text" id="projectSearch" placeholder="Filter by ID, name, or category..." style="max-width:400px;">
+    </div>
+
+    <div id="projectList">
+    {% for p in projects %}
+        <div class="project-row" data-search="{{ p.id|lower }} {{ p.student_name|lower }} {{ p.category|lower }}">
+            <div class="project-info">
+                <span class="pid">{{ p.id }}</span> –
+                <strong>{{ p.student_name }}</strong>
+                <br><span style="font-size:0.85rem; color:var(--text-muted);">{{ p.category }} · {{ p.title[:80] }}{% if p.title|length > 80 %}…{% endif %}</span>
+            </div>
+            <div>
+                {% if p.scored %}
+                    <span class="badge badge-success">Scored ✓</span>
+                {% else %}
+                    <a href="{{ url_for('score_project', project_id=p.id) }}" class="btn btn-sm btn-primary">Score</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+
+<script>
+document.getElementById('projectSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.project-row').forEach(row => {
+        row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Results – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Admin Panel</span>
+    <div>
+        <a href="{{ url_for('admin_dashboard') }}">Judges</a>
+        <a href="{{ url_for('admin_results') }}">Results</a>
+        <a href="{{ url_for('admin_view_scores') }}">Raw Scores</a>
+        <a href="{{ url_for('admin_logout') }}">Log Out</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <h1>Aggregated Results</h1>
+    <div>
+        <form method="POST" action="{{ url_for('admin_process') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <button type="submit" class="btn btn-primary btn-sm">Re-process</button>
+        </form>
+        <a href="{{ url_for('admin_download') }}" class="btn btn-sm btn-outline" style="margin-left:0.5rem;">Download CSV</a>
+    </div>
+</div>
+
+{% if categories %}
+    {% for cat, rows in categories.items() %}
+    <div class="card">
+        <h2>{{ cat }}</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project ID</th>
+                        <th>Student</th>
+                        <th>Title</th>
+                        <th>Avg Score</th>
+                        <th># Judges</th>
+                        <th>Judges Had</th>
+                        <th>Assigned</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        <td><code>{{ r['Student Project ID'] }}</code></td>
+                        <td>{{ r['Student Name'] }}</td>
+                        <td>{{ r['Title of Presentation'][:60] }}{% if r['Title of Presentation']|length > 60 %}…{% endif %}</td>
+                        <td><strong>{{ '%.1f'|format(r['Average Total Score']) }}</strong></td>
+                        <td>{{ r['Judges Num']|int }}</td>
+                        <td>{{ r['Judges Had'] }}</td>
+                        <td>{{ r['Assigned Judges'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <p style="color: var(--text-muted);">No results yet. Click <strong>Process Scores</strong> on the dashboard first.</p>
+    </div>
+{% endif %}
+{% endblock %}

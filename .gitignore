@@ -1,5 +1,5 @@
 csvs/
-2025/
+data/
 science_fair_judging.log
 .env
 __pycache__/
@@ -8,3 +8,5 @@ output/
 # uv
 .venv/
 uv.lock
+
+judging.db

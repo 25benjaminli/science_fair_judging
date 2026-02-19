@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – Science Fair Judging{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <span class="brand">📊 Admin Panel</span>
+    <div>
+        <a href="{{ url_for('admin_dashboard') }}">Judges</a>
+        <a href="{{ url_for('admin_results') }}">Results</a>
+        <a href="{{ url_for('admin_view_scores') }}">Raw Scores</a>
+        <a href="{{ url_for('admin_logout') }}">Log Out</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="number">{{ total_judges }}</div>
+        <div class="label">Approved Judges</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ pending|length }}</div>
+        <div class="label">Pending Approval</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ total_scores }}</div>
+        <div class="label">Scores Submitted</div>
+    </div>
+</div>
+
+{% if pending %}
+<div class="card">
+    <h2>Pending Judge Approvals</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Judge ID</th>
+                    <th>Signed Up</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for j in pending %}
+                <tr>
+                    <td><strong>{{ j['first_name'] }} {{ j['last_name'] }}</strong></td>
+                    <td>{{ j['username'] }}</td>
+                    <td><code>{{ j['judge_id'] }}</code></td>
+                    <td>{{ j['created_at'] }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('approve_judge', judge_db_id=j['id']) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('reject_judge', judge_db_id=j['id']) }}" style="display:inline; margin-left:0.25rem;"
+                              onsubmit="return confirm('Remove this judge?')">
+                            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Approved Judges</h2>
+    {% if approved %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Judge ID</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Assignments</th>
+                    <th>Signed Up</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for j in approved %}
+                <tr>
+                    <td><code>{{ j['judge_id'] }}</code></td>
+                    <td>{{ j['first_name'] }} {{ j['last_name'] }}</td>
+                    <td>{{ j['username'] }}</td>
+                    <td>{{ j['assignment_count'] }} project(s)</td>
+                    <td>{{ j['created_at'] }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_assign_judge', judge_db_id=j['id']) }}" class="btn btn-sm btn-primary">Assign</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--text-muted);">No approved judges yet.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Process Scores</h2>
+    <p style="color:var(--text-muted); margin-bottom:1rem;">
+        Aggregate all submitted scores, validate, and generate the output CSV.
+    </p>
+    <form method="POST" action="{{ url_for('admin_process') }}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <button type="submit" class="btn btn-primary">Process Scores</button>
+    </form>
+</div>
+{% endblock %}
