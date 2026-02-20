@@ -1,6 +1,6 @@
 # Science Fair Judging System
 
-This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Symposium with a more generalized user interface for easier monitoring. The main ideas are to track judging scores for student projects, generate summary statistics, and verify input validity. At some point it may be a good idea to create a unified interface to handle judge signup, project registration, and score processing but for now the program requires some manual setup. Feel free to [email me](mailto:25benjaminli@gmail.com) with any questions about usage. 
+This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Symposium with a more generalized user interface for easier monitoring. The main ideas are to track judging scores for student projects, generate summary statistics, and verify input validity. The program requires some manual setup for both students and judges, but a [prototype "unified" version](https://github.com/25benjaminli/science_fair_judging/tree/db) with judge signup, score processing, and admin tools is available on the "db" branch. Feel free to [email me](mailto:25benjaminli@gmail.com) with any questions about usage. 
 
 ## Installation
 
