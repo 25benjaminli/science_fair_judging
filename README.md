@@ -1,6 +1,7 @@
 # Science Fair Judging App
+**Note: [firebase](https://github.com/25benjaminli/science_fair_judging/tree/firebase) branch is preferred due to concurrent write operations.**
 
-This branch is a prototype Flask + SQLite web app. It's end-to-end, managing the judge signup, score entering, and processing in one interface. Assumes that student data is already available (check [Setup](#setup) to see how it should be formatted). 
+This branch (db) is a prototype Flask + SQLite web app. It's end-to-end, managing the judge signup, score entering, and processing in one interface. Assumes that student data is already available (check [Setup](#setup) to see how it should be formatted). 
 
 ## Setup
 
