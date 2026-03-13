@@ -3,38 +3,27 @@
 
 {% block navbar %}
 <nav class="navbar">
-    <span class="brand">📊 Science Fair Judging</span>
+    <span class="brand"> Science Fair Judging</span>
     <div>
-        <a href="{{ url_for('login') }}">Log In</a>
-        <a href="{{ url_for('signup') }}">Sign Up</a>
+        <a href="{{ url_for('index') }}">Home</a>
     </div>
 </nav>
 {% endblock %}
 
 {% block content %}
 <div class="auth-wrapper">
-    <div class="card">
+    <div class="card" style="text-align: center;">
         <h1>Judge Log In</h1>
-        <p class="subtitle">Sign in with your approved judge account.</p>
+        <p class="subtitle">Sign in or sign up with your Google account.</p>
+        
+        <!-- We use an empty form or direct link to start the Google OAuth flow, 
+             which simplifies the design. -->
+        <a href="{{ url_for('login', provider='google') }}" class="btn btn-primary" style="display:inline-block; width:100%; margin-top:1rem; padding: 0.75rem;">
+            Sign in with Google
+        </a>
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required placeholder="Your username">
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="Your password">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Log In</button>
-        </form>
-
-        <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
-            Don't have an account? <a href="{{ url_for('signup') }}" class="link">Sign up</a>
-        </p>
-        <p style="text-align:center; margin-top:0.5rem; font-size:0.85rem; color: var(--text-muted);">
-            <a href="{{ url_for('admin_login') }}" class="link">Admin Login</a>
+        <p style="text-align:center; margin-top:1.5rem; font-size:0.85rem; color: var(--text-muted);">
+            <a href="{{ url_for('index') }}" class="link">Back to Home</a>
         </p>
     </div>
 </div>

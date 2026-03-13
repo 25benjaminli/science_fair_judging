@@ -2,17 +2,13 @@
 
 import os
 import re
-import sqlite3
 import hashlib
 import secrets
 
 import pandas as pd
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-DATABASE = "judging.db"
 DATA_DIR = "data"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
@@ -42,103 +38,36 @@ SCORING_SHORT_NAMES = [
     "questions",
 ]
 
-# ---------------------------------------------------------------------------
-# Database initialization
-# ---------------------------------------------------------------------------
-
-
 def init_db():
-    """Create tables if they don't exist."""
-    db = sqlite3.connect(DATABASE)
-    db.execute("PRAGMA journal_mode=WAL")
-    db.executescript("""
-        CREATE TABLE IF NOT EXISTS judges (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            first_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
-            judge_id TEXT UNIQUE NOT NULL,
-            approved INTEGER DEFAULT 0,
-            created_at TEXT
-        );
-        CREATE TABLE IF NOT EXISTS scores (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            judge_id TEXT NOT NULL,
-            student_project_id TEXT NOT NULL,
-            background INTEGER NOT NULL,
-            originality INTEGER NOT NULL,
-            methodology INTEGER NOT NULL,
-            analysis INTEGER NOT NULL,
-            interpretation INTEGER NOT NULL,
-            knowledge INTEGER NOT NULL,
-            delivery INTEGER NOT NULL,
-            organization INTEGER NOT NULL,
-            visual_aids INTEGER NOT NULL,
-            questions INTEGER NOT NULL,
-            comments TEXT DEFAULT '',
-            student_name TEXT DEFAULT '',
-            created_at TEXT,
-            UNIQUE(judge_id, student_project_id)
-        );
-        CREATE TABLE IF NOT EXISTS judge_assignments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            judge_id TEXT NOT NULL,
-            student_project_id TEXT NOT NULL,
-            UNIQUE(judge_id, student_project_id)
-        );
-    """)
-    db.commit()
-    db.close()
+    """Initialize Firebase Admin SDK."""
+    if not firebase_admin._apps:
+        cred = credentials.Certificate("credentials.json")
+        firebase_admin.initialize_app(cred)
+    return firestore.client()
 
 
-# ---------------------------------------------------------------------------
-# Password helpers
-# ---------------------------------------------------------------------------
+def get_db():
+    return firestore.client()
 
-def hash_password(password):
-    salt = secrets.token_hex(16)
-    h = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}${h}"
-
-
-def verify_password(stored, password):
-    salt, h = stored.split("$", 1)
-    return hashlib.sha256((salt + password).encode()).hexdigest() == h
-
-
-# ---------------------------------------------------------------------------
-# Judge ID generation
-# ---------------------------------------------------------------------------
 
 def generate_judge_id(first_name, last_name, db):
-    """Generate a unique 3-4 letter judge ID from name initials."""
     base = (first_name[0] + last_name[:2]).upper()
     candidate = base
     suffix = 1
-    while db.execute("SELECT 1 FROM judges WHERE judge_id = ?", (candidate,)).fetchone():
+    judges_ref = db.collection('judges')
+    # keep appending numbers until found unused ID
+    while True:
+        docs = judges_ref.where('judge_id', '==', candidate).limit(1).get()
+        if not docs:
+            break
         candidate = base + str(suffix)
         suffix += 1
     return candidate
 
 
-# ---------------------------------------------------------------------------
-# Input validation
-# ---------------------------------------------------------------------------
-
 def sanitize_text(value, max_len=200):
     """Strip and truncate text input."""
     return str(value).strip()[:max_len]
-
-
-def validate_username(username):
-    """Username must be 3-50 alphanumeric/underscore chars."""
-    return bool(re.match(r'^[a-zA-Z0-9_]{3,50}$', username))
-
-
-# ---------------------------------------------------------------------------
-# Student data helpers (from student_assignments.csv)
-# ---------------------------------------------------------------------------
 
 def load_student_projects():
     """Load and return the student_assignments DataFrame with forward-filled categories."""
@@ -152,27 +81,23 @@ def load_student_projects():
     df["ID (project)"] = df["ID (project)"].astype(str).str.strip().str.upper()
     return df
 
-
-# ---------------------------------------------------------------------------
-# Score processing
-# ---------------------------------------------------------------------------
-
 def process_scores(db):
     """Process all scores from the database and generate output CSV. Returns the DataFrame."""
-    rows = db.execute("SELECT * FROM scores").fetchall()
-    if not rows:
+    docs = db.collection('scores').get()
+    if not docs:
         return None
 
     records = []
-    for r in rows:
+    for doc in docs:
+        r = doc.to_dict()
         record = {
-            "Judge ID": r["judge_id"],
-            "Student Project ID": r["student_project_id"].strip().upper(),
+            "Judge ID": r.get("judge_id"),
+            "Student Project ID": r.get("student_project_id", "").strip().upper(),
         }
         for short, full in zip(SCORING_SHORT_NAMES, SCORING_COLUMNS):
-            record[full] = r[short]
-        record["Other Comments"] = r["comments"]
-        record["Student Name"] = r["student_name"]
+            record[full] = r.get(short, 0)
+        record["Other Comments"] = r.get("comments", "")
+        record["Student Name"] = r.get("student_name", "")
         records.append(record)
 
     scores_df = pd.DataFrame(records)
@@ -228,11 +153,8 @@ def process_scores(db):
 
     # Add assigned judges column from judge_assignments table
     def resolve_assigned(pid):
-        assigned_rows = db.execute(
-            "SELECT judge_id FROM judge_assignments WHERE student_project_id = ?",
-            (pid,),
-        ).fetchall()
-        return ",".join(sorted(r["judge_id"].upper() for r in assigned_rows))
+        assigned_docs = db.collection('judge_assignments').where('student_project_id', '==', pid).get()
+        return ",".join(sorted(doc.to_dict().get("judge_id", "").upper() for doc in assigned_docs))
 
     final_df["Assigned Judges"] = final_df["Student Project ID"].apply(
         resolve_assigned)
@@ -253,11 +175,8 @@ def verify_validity(final_df, db):
         if len(unique_had) != row["Judges Num"]:
             issues.append(f"Duplicate judge entries for {pid}: {judges_had}")
 
-        assigned_rows = db.execute(
-            "SELECT judge_id FROM judge_assignments WHERE student_project_id = ?",
-            (pid,),
-        ).fetchall()
-        assigned_ids = [r["judge_id"].upper() for r in assigned_rows]
+        assigned_docs = db.collection('judge_assignments').where('student_project_id', '==', pid).get()
+        assigned_ids = [doc.to_dict().get("judge_id", "").upper() for doc in assigned_docs]
 
         for jid in unique_had:
             if assigned_ids and jid not in assigned_ids:

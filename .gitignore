@@ -9,4 +9,4 @@ output/
 .venv/
 uv.lock
 
-judging.db
+credentials.json
