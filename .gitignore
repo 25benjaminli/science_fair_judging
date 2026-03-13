@@ -1,10 +1,11 @@
 csvs/
-data/
+real_data/
 science_fair_judging.log
 .env
 __pycache__/
-output/
+**/.DS_Store
 
 # uv
 .venv/
 uv.lock
+credentials.json

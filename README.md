@@ -1,6 +1,11 @@
 # Science Fair Judging System
 
-This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Symposium with a more generalized user interface for easier monitoring. The main ideas are to track judging scores for student projects, generate summary statistics, and verify input validity. At some point it may be a good idea to create a unified interface to handle judge signup, project registration, and score processing but for now the program requires some manual setup. Feel free to [email me](mailto:25benjaminli@gmail.com) with any questions about usage. 
+This is built on software developed for the 2025 New Jersey Academy of Science (NJAS) Junior Symposium with a more generalized user interface for easier monitoring. The main ideas are to track judging scores for student projects, generate summary statistics, and verify input validity. The program requires some manual setup for both students and judges. Feel free to [email me](mailto:25benjaminli@gmail.com) with any questions about usage. 
+
+Branches (prototypes):
+- [firebase](https://github.com/25benjaminli/science_fair_judging/tree/firebase): Unified interface for managing judge signup, score processing, and admin tools. Uses flask + firebase and also supports oauth. May be advantageous to db (below) because it supports concurrent write operations. 
+- [db](https://github.com/25benjaminli/science_fair_judging/tree/db): Uses sqlite instead of firebase, normal username/password signup/signin procedure. 
+
 
 ## Installation
 
@@ -22,7 +27,7 @@ uv sync
 
 ## Data Format
 
-Dummy data is provided in the `dummy_data` directory for testing. Create a directory `data` and copy the dummy data files into it, then delete it if you have your own data. Explanations of the relevant files are below. The program performs various checks to ensure data integrity but the **data must be in the correct format.** 
+Dummy data is provided in the `data` directory for testing. Delete files if you have your own data. Explanations of the relevant files are below. The program performs various checks to ensure data integrity but the **data must be in the correct format.** 
 
 ### `student_assignments.csv`
 
@@ -55,7 +60,7 @@ List of all judges with unique identifiers. These IDs must be consistent through
 
 ### `raw_scores.csv`
 
-If you're working with the dummy data, this is already available under `dummy_data/raw_scores`. Otherwise, this is acquired via the spreadsheet connected to the google form. 
+If you're working with the dummy data, this is already available under `data/raw_scores.csv`. Otherwise, this is acquired via the spreadsheet connected to the google form. 
 
 | Timestamp | Email Address | Judge ID | Student Project ID | Presentation Content [Background] | Presentation Content [Originality] | Presentation Content [Methodology] | ... | Other Comments | Student Name |
 |-----------|---------------|----------|-------------------|----------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------|-----|----------------|--------------|

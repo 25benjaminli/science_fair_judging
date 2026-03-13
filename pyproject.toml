@@ -32,9 +32,6 @@ dependencies = [
     "streamlit>=1.31.0",
 ]
 
-[project.scripts]
-science-fair-process = "main:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

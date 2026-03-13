@@ -19,9 +19,7 @@ logger = logging.getLogger()
 st.set_page_config(page_title="Science Fair Judging System",
                    page_icon="📊", layout="wide")
 
-# configure for your own use
 data_dir = "data"
-out_dir = "output"
 
 st.title("Science Fair Judging System")
 st.markdown(
@@ -31,13 +29,34 @@ st.markdown(
 tab1, tab2, tab3 = st.tabs(
     ["Search Students", "Search Judges", "Process Scores"])
 
+
+def generate_tab():
+    st.markdown("---")
+
+    output_df = pd.read_csv(f"{data_dir}/output.csv")
+
+    categories = output_df["Category"].unique()
+    for category in sorted(categories):
+        st.subheader(f"**{category}**")
+        category_df = output_df[output_df["Category"] == category]
+        st.dataframe(category_df, use_container_width=True,
+                     hide_index=True)
+
+    st.download_button(
+        label="Download CSV",
+        data=output_df.to_csv(index=False),
+        file_name="aggregated_scores.csv",
+        mime="text/csv",
+    )
+
+
 with tab1:
     st.header("Student Search")
     st.markdown(
         "Search for a student to view their project details and assigned judges")
 
-    if os.path.exists(f"{out_dir}/output.csv"):
-        output_df = pd.read_csv(f"{out_dir}/output.csv")
+    if os.path.exists(f"{data_dir}/output.csv"):
+        output_df = pd.read_csv(f"{data_dir}/output.csv")
 
         search_term = st.text_input(
             "Search by Student Name or Project ID",
@@ -87,10 +106,10 @@ with tab2:
 
     if (
         os.path.exists(f"{data_dir}/ids_judges.csv")
-        and os.path.exists(f"{out_dir}/output.csv")
+        and os.path.exists(f"{data_dir}/output.csv")
     ):
         ids_judges_df = pd.read_csv(f"{data_dir}/ids_judges.csv")
-        output_df = pd.read_csv(f"{out_dir}/output.csv")
+        output_df = pd.read_csv(f"{data_dir}/output.csv")
 
         # Map judge_id -> list of projects they judged
         judge_to_judged = {}
@@ -150,7 +169,7 @@ with tab2:
 
                         with col1:
                             st.markdown(
-                                f"### ✅ Projects Judged ({len(judged_projects)})")
+                                f"### Projects Judged ({len(judged_projects)})")
                             if judged_projects:
                                 for project in judged_projects:
                                     st.markdown(
@@ -159,7 +178,7 @@ with tab2:
                                 st.info("No projects judged yet")
 
                         with col2:
-                            st.markdown(f"### ⏳ Not Yet Judged")
+                            st.markdown(f"### Not Yet Judged")
                             judged_ids = [p['id'] for p in judged_projects]
                             unjudged = [
                                 p for p in assigned_projects if p['id'] not in judged_ids]
@@ -235,12 +254,12 @@ with tab3:
 
                 if should_process or not check_updates:
                     with st.spinner("Processing scores..."):
-                        final_df = generate_csv(data_dir, out_dir)
+                        final_df = generate_csv(data_dir)
                         st.success(f"Processed {len(final_df)} projects")
 
                     if verify_validity_flag:
                         with st.spinner("Verifying validity..."):
-                            if verify_validity(final_df, data_dir, out_dir):
+                            if verify_validity(final_df, data_dir):
                                 st.success("✅ Passed all validity checks")
                                 valid = True
                             else:
@@ -265,7 +284,7 @@ with tab3:
                             worksheet = spreadsheet.worksheet(
                                 "aggregated_scores")
 
-                            with open(f"{out_dir}/output.csv", "r") as f:
+                            with open(f"{data_dir}/output.csv", "r") as f:
                                 all_rows = list(csv.reader(f))
 
                             if all_rows:
@@ -276,54 +295,32 @@ with tab3:
                                 )
                                 st.success(
                                     f"✅ Uploaded {len(all_rows)} rows to Google Sheets")
+
                     elif valid and not upload_to_sheets:
                         st.info(
-                            "📋 Skipped uploading to Google Sheets (disabled in options)")
+                            "Skipped uploading to Google Sheets (disabled in options)")
 
-                if os.path.exists(f"{out_dir}/output.csv"):
-                    st.markdown("---")
-                    st.header("Aggregated Scores")
+                    st.rerun()
 
-                    output_df = pd.read_csv(f"{out_dir}/output.csv")
-
-                    categories = output_df["Category"].unique()
-                    for category in sorted(categories):
-                        st.subheader(f"**{category}**")
-                        category_df = output_df[output_df["Category"]
-                                                == category]
-                        st.dataframe(
-                            category_df, use_container_width=True, hide_index=True)
-
-                    st.download_button(
-                        label="Download CSV",
-                        data=output_df.to_csv(index=False),
-                        file_name="aggregated_scores.csv",
-                        mime="text/csv",
-                    )
+                if os.path.exists(f"{data_dir}/output.csv"):
+                    generate_tab()
 
             except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
-                logger.error(f"Streamlit error: {str(e)}")
+                if str(e) == "<Response [404]>":
+                    st.error(
+                        "❌ Error: Likely Google Sheets not found. Please check your SPREADSHEET_KEY and ensure the sheet exists.")
+                    logger.error(
+                        "Likely Google Sheets not found. Check SPREADSHEET_KEY.")
+                else:
+                    st.error(f"❌ Error: {str(e)}")
+                    logger.error(f"Streamlit error: {str(e)}")
+                # it may be the case that you are working with dummy data, so just generate output if possible
+                final_scores = generate_csv(data_dir)
+                validity_passed = verify_validity(final_scores, data_dir)
+                generate_tab()
+                st.rerun()
 
-    elif os.path.exists(f"{out_dir}/output.csv"):
-        st.info("Click 'Process Scores' to fetch and process new data")
-        st.markdown("---")
-        st.header("Last Processed Results")
-
-        output_df = pd.read_csv(f"{out_dir}/output.csv")
-
-        categories = output_df["Category"].unique()
-        for category in sorted(categories):
-            st.subheader(f"**{category}**")
-            category_df = output_df[output_df["Category"] == category]
-            st.dataframe(category_df, use_container_width=True,
-                         hide_index=True)
-
-        st.download_button(
-            label="Download CSV",
-            data=output_df.to_csv(index=False),
-            file_name="aggregated_scores.csv",
-            mime="text/csv",
-        )
+    elif os.path.exists(f"{data_dir}/output.csv"):
+        generate_tab()
     else:
         st.info("Click 'Process Scores' to get started")
